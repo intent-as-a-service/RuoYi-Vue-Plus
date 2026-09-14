@@ -1,4 +1,96 @@
+**English overview** · [详细中文文档见下方](#chinese)
+
+<a name="english"></a>
+# Intent as a Service — delivery documentation
+
+This directory documents the Intent as a Service integration on RuoYi-Vue-Plus: what was built, why
+it was built that way, how to add an intent, and what was actually measured. The detailed sections
+below are in Chinese; this overview covers everything an English reader needs to orient themselves.
+
+## What it is
+
+Instead of putting an LLM behind a chat box, business pages expose **intent buttons**. Clicking one
+executes a declared intent and renders a **standard result envelope**
+(`title` / `summary` / `blocks` / `followups` / `nextIntents`) directly in the page, as text,
+key-value, table, list or badge blocks.
+
+The AI runs **in-process** inside the Spring Boot application. Tool calls go straight to the host's
+own services, so permissions, transactions and data-scope filtering follow the existing call stack —
+no separate account system, no cross-domain calls, no data leaving the boundary.
+
+## What ships here
+
+| Layer | Location | Contents |
+|---|---|---|
+| Platform | `ruoyi-common/ruoyi-common-intent/` | Auto-configuration, Sa-Token bridges, four controllers, three tables, `intent-ui` debug console |
+| Business intents | `ruoyi-modules/ruoyi-intent/` | 13 host tools, 14 intent specs, 3 declarative fact rules, 1 zero-LLM executor profile |
+| Schema | `script/sql/intent.sql` | Three tables, twelve `sys_menu` rows, role grants |
+
+## Architecture: three boundaries
+
+1. **SDK decoupled from the host framework** — the core modules carry no Spring dependency; identity,
+   permissions and context are SPI implementations the host provides.
+2. **SDK decoupled from the AI engine** — pi-ai / pi-agent live in exactly one module. Pure-process
+   scenarios (`skill` / `flow` executors) need no inference engine and therefore no LLM.
+3. **Platform decoupled from business** — a business module only declares tools and YAML. Delete it
+   and the framework still runs, just without those intents.
+
+### The context bridge is mandatory, not a nicety
+
+The reasoning loop executes tools on its own threads while the host's login state and data scope are
+bound to the request thread. Failing to carry the request attributes across **does not raise an
+error** — `LoginHelper.getUserId()` returns null, data-scope filtering stops applying, and the tool
+quietly returns someone else's data (or nothing at all). `SaTokenIntentContextBridge` captures the
+`RequestAttributes` at the execution entry point and restores them on every tool thread, clearing
+them afterwards.
+
+## Invariants the startup path enforces
+
+- **Five elements or it does not boot.** An intent spec must declare id, params schema + context,
+  prompt template + tool allow-list, output schema and policy. An unknown intent reference, a
+  parameter outside the schema or a template referencing an unknown field stops the application.
+- **Seeding never resurrects deleted intents.** Specs are seeded only when they are physically
+  absent (the mapper counts with logic delete bypassed on purpose), so unpublishing an intent in the
+  admin UI survives a restart.
+- **Catalog visibility is not authorization.** Anyone who knows an intent id can POST to the
+  execution endpoint, so permissions are re-checked independently before every execution — hiding an
+  intent from the menu is a UX decision, never a security control.
+- **Identity never comes from the request body.** The execute request deliberately exposes only
+  `intentId`, `params` and `context`; the user is taken from the server-side session.
+- **Secrets never reach the prompt.** Tools that surface configuration mask values whose keys look
+  sensitive (`password` / `secret` / `token` / `key`) and report only whether they are set.
+
+## How to run it
+
+See section 4 below, or the repository root README. In short: install the `intent-sdk` snapshot into
+your local Maven repository, import `ry_vue.sql` and `intent.sql`, then start the backend with
+`PI_API_KEY` and `MYSQL_PASSWORD` supplied as environment variables. No key is written into the
+configuration files.
+
+## Measured results
+
+| Scenario | Duration | Tokens |
+|---|---|---|
+| agent-type intent (reasoning loop, 11 tool calls) | 19–23 s | 7.7k–10.8k |
+| **skill-type intent (pure tool steps, zero LLM)** | **13–51 ms** | **0** |
+
+A data-fetching intent that needs no live judgement belongs in a skill-type executor profile: two to
+three orders of magnitude faster, zero token cost, and the output is auditable.
+
+## Further reading
+
+- [`接入指南.md`](./接入指南.md) — SOP for adding an intent (tool → spec → rule → front-end context)
+- [`意图清单.md`](./意图清单.md) — every shipped intent, tool, executor profile and fact rule
+- [`tools/`](./tools/) — two offline validators for intent YAML and executor profiles
+- [intent-sdk](https://github.com/intent-as-a-service/intent-sdk) — the framework itself, with
+  English documentation
+
+---
+
+<a name="chinese"></a>
 # 意图即服务开发框架（Intent as a Service）
+
+[English](#english) · **中文**
 
 > 把 **next-agent 的内嵌 AI 意图 SDK** 植入 RuoYi-Vue-Plus，得到一套"没有聊天框"的 AI 接入方式：
 > 业务页面放一排意图按钮，点击即执行，结果卡片内嵌返回；AI 能力以**原生 SDK 进程内嵌入**，
