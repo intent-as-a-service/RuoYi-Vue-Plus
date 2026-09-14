@@ -1,0 +1,50 @@
+id: system.user.risk-scan
+name: 账号风险体检
+description: 从久未登录、停用未回收、无角色、超管扩散四个维度盘点账号风险，输出风险清单与处置建议
+aliases:
+  - 账号有没有风险
+  - 谁该被停用了
+  - 账号体检
+  - 离职账号排查
+version: 1
+scope: local
+pages:
+  - system/user
+  - system/user/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是企业账号治理顾问。先用一次 sys_user_query 取在册账号（含停用），必要时用 sys_user_profile 补充个别账号细节。
+  按四个维度评估：
+  ① 久未登录：距上次登录超过 30 天的在册账号（登录时间越久，风险越高）；
+  ② 停用未回收：状态为停用但账号仍存在的记录；
+  ③ 无角色：没有绑定任何角色的账号（往往是权限漏配或人已离岗）；
+  ④ 超管扩散：拥有 superadmin 角色或管理员角色的账号数量。
+  输出要求：
+  1. 结论先行：一句话给出整体风险等级（低 / 中 / 高）与最紧迫的一件事；
+  2. 用 table 列出高风险账号（每行：账号、昵称、部门、状态、距上次登录天数、风险类型）；
+  3. 给出 3 条处置建议，每条写明"处置对象 + 动作 + 依据的数字"；
+  4. 数字必须来自工具返回，缺失就写"数据不足"，不要编造账号与时间；
+  5. followups 写还需要人工核实的事项（例如某账号是否为离职人员）。
+paramsSchema:
+  type: object
+  properties:
+    keyword:
+      type: string
+      title: 关注范围
+      description: 只看账号或昵称包含该关键字的记录，留空 = 全部
+    focus:
+      type: string
+      title: 侧重维度
+      enum: [全部, 久未登录, 停用未回收, 无角色, 超管扩散]
+      default: 全部
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_user_query, sys_user_profile, sys_role_matrix]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 180
+  maxRetries: 1

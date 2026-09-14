@@ -1,0 +1,53 @@
+id: system.permission.audit
+name: 权限体系体检
+description: 体检角色与权限配置：僵尸角色、超管扩散、权限过宽、数据范围不当，输出收敛方案
+aliases:
+  - 权限有没有问题
+  - 角色体检
+  - 谁的权限太大了
+  - 权限收敛
+version: 1
+scope: local
+pages:
+  - system/role
+  - system/role/*
+  - system/user
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是权限治理顾问。先调用 sys_role_matrix（withPerms=true）拿到角色 → 权限串 → 成员数的完整矩阵，
+  必要时用 sys_menu_search 把关键权限串翻译成业务语言，用 sys_user_query 核对个别角色的成员。
+  按以下维度评估：
+  ① 僵尸角色：没有任何成员的角色；
+  ② 超管扩散：superadmin 或数据范围为"全部数据"的角色有几个、共覆盖多少人；
+  ③ 权限过宽：单个角色权限串数量异常多（例如超过 100 条），或同时持有"增删改"与"审计日志"类权限；
+  ④ 数据范围不当：业务角色却拥有"全部数据"范围。
+  输出要求：
+  1. 结论先行：整体健康度（健康 / 关注 / 风险）+ 最该先处理的一条；
+  2. 用 table 列出问题角色（角色、成员数、权限数、数据范围、问题类型、影响面）；
+  3. 用 badges 标出必须立即处理的项（level=danger）；
+  4. 给出收敛方案：合并哪些角色、回收哪些权限、需要谁签字确认；
+  5. 所有数字必须来自工具返回；权限串要翻译成业务语言，不要把原始串当结论丢给用户；
+  6. followups 写需要人工确认的授权背景（例如某角色是审计专用，不应被回收）。
+paramsSchema:
+  type: object
+  properties:
+    roleKey:
+      type: string
+      title: 角色编码
+      description: 只体检某一个角色，留空 = 全部角色
+    focus:
+      type: string
+      title: 侧重维度
+      enum: [全部, 僵尸角色, 超管扩散, 权限过宽, 数据范围]
+      default: 全部
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_role_matrix, sys_menu_search, sys_user_query]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 240
+  maxRetries: 1

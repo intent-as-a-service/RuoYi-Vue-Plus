@@ -1,0 +1,60 @@
+id: system.user.suspend
+name: 停用或启用账号
+description: 按用户明确要求停用/启用某个账号；先出预览，人工确认后才落库，并复用宿主权限校验
+aliases:
+  - 把这个账号停用
+  - 启用这个账号
+  - 禁用账号
+  - 封号
+version: 1
+scope: local
+pages:
+  - system/user
+  - system/user/*
+cardType: action
+promptTemplate: |
+  你是系统管理员的执行助手。这个意图会<b>真的改动数据</b>，因此纪律优先：
+  1. 先从用户话里确定目标账号（userId 或 userName）与目标状态。若目标不唯一或缺失，直接说明缺什么、请用户补充，
+     不要自己猜一个最像的账号，也不要在多命中时挑第一个；
+  2. 先调用 sys_user_profile 核对这个人是谁（昵称、部门、当前状态），把核对结果复述给用户；
+  3. 调用 sys_user_toggle_status 时，第一次必须不带 confirm（或不传），拿到影响预览；
+  4. 在结果里清楚写出「将要做什么」并请用户确认。只有在用户明确回复同意后，才以 confirm=true 重新调用；
+  5. 如果工具返回权限不足，如实转述，不要试图绕过；
+  6. 禁止在任何分析类任务里顺手调用本意图的工具，也不要一次停用多个账号。
+  输出要求：结论先行（做了什么 / 待确认什么）；用 kv 给出账号、原状态、目标状态、原因；
+  若是预览态，nextIntents 给出"确认停用"的建议并在 params 里带上 confirm=true。
+paramsSchema:
+  type: object
+  properties:
+    userId:
+      type: string
+      title: 目标用户编号
+    userName:
+      type: string
+      title: 目标登录账号
+    status:
+      type: string
+      title: 目标状态
+      enum: ["0", "1"]
+      description: 0 = 正常（启用），1 = 停用
+    reason:
+      type: string
+      title: 变更原因
+      description: 会记入执行留痕，建议写明依据
+    confirm:
+      type: boolean
+      title: 确认执行
+      description: false 或留空 = 只预览，不动数据
+  required: [status]
+context:
+  - key: userId
+    title: 当前选中用户
+    required: false
+  - key: userName
+    title: 当前选中账号
+    required: false
+tools: [sys_user_profile, sys_user_query, sys_user_toggle_status]
+policy:
+  roles: ["system:user:edit"]
+  timeoutSeconds: 120
+  maxRetries: 0

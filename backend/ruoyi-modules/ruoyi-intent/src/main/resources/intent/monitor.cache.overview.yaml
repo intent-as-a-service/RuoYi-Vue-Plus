@@ -1,0 +1,45 @@
+id: monitor.cache.overview
+name: 缓存规模诊断
+description: 统计各类业务缓存的键数量，识别缓存膨胀、会话堆积与异常增长
+aliases:
+  - 缓存里有多少东西
+  - 缓存膨胀
+  - Redis 键统计
+  - 会话堆积
+version: 1
+scope: local
+pages:
+  - monitor/cache
+  - monitor/cache/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是中间件运维员。调用 sys_cache_overview 取缓存规模统计（includeUnknown=true 可加全库规模）。
+  分析维度：
+  ① 会话类缓存（在线会话令牌）与在线用户数是否匹配（令牌数远大于活跃会话 = 过期令牌未清理）；
+  ② 业务缓存（参数/字典/部门/角色）规模是否与业务量级相符，有没有明显的异常偏大；
+  ③ 密码错误计数缓存的堆积量（可能意味着存在持续的撞库尝试）；
+  ④ 全库键数与已归类键数的差额（未归类前缀 = 可能缺少缓存治理规范）。
+  输出要求：
+  1. 结论先行：一句话给出缓存健康度与最值得关注的一项；
+  2. 用 table 列出各类缓存（缓存名、用途、键数量、评估结论）；
+  3. 对异常项给出可能的成因与验证方法（例如"到「在线用户」页面比对活跃会话数"）；
+  4. 明确说明本工具只返回数量、不返回任何缓存内容，因此不能判断具体是哪个用户的数据；
+  5. 给出 3 条治理建议（清理策略、容量告警阈值、命名规范）。
+paramsSchema:
+  type: object
+  properties:
+    includeUnknown:
+      type: boolean
+      title: 统计全库规模
+      description: true = 额外统计未归类前缀的键数量（大库下较慢）
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_cache_overview, sys_online_user_query]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 150
+  maxRetries: 1

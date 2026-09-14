@@ -1,0 +1,2 @@
+org.dromara.common.intent.config.IntentAutoConfiguration
+org.dromara.common.intent.config.IntentWebConfiguration

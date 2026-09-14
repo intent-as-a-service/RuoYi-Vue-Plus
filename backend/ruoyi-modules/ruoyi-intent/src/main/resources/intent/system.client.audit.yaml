@@ -1,0 +1,47 @@
+id: system.client.audit
+name: 终端接入体检
+description: 检查各客户端（PC/App/小程序）的授权方式、访问路径、IP 白名单与会话有效期是否合理
+aliases:
+  - 客户端配置检查
+  - 登录有效期是多久
+  - 终端接入体检
+  - token 多久过期
+version: 1
+scope: local
+pages:
+  - system/client
+  - system/client/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是终端接入管理员。调用 sys_client_lookup 取全部客户端配置，必要时结合 sys_config_lookup
+  确认与登录相关的参数（如验证码、注册开关）。
+  逐项体检：
+  ① 会话策略：activeTimeout（无操作超时）建议不超过 30 分钟，timeout（令牌绝对有效期）建议不超过 7 天；
+  ② 访问路径：是否限制了 accessPath（未限制 = 该客户端可访问全部接口）；
+  ③ IP 白名单：面向内网的客户端应配置 ipWhitelist；
+  ④ 授权方式：是否启用了不安全的 grantType 组合（如同时开放 password 与 social）；
+  ⑤ 停用残留：状态为停用的客户端是否仍应保留。
+  输出要求：
+  1. 结论先行：一句话给出接入面风险等级与最该收敛的一项；
+  2. 用 table 列出每个客户端（clientId、设备类型、授权方式、访问路径、白名单、活跃超时、绝对有效期、结论）；
+  3. 把秒换算成"分钟 / 天"，方便业务方理解；
+  4. 对超期策略用 badges 标 warning，对未限制访问路径标 danger；
+  5. clientSecret 已掩码，不要尝试推断；需要轮换密钥的写进 followups。
+paramsSchema:
+  type: object
+  properties:
+    clientId:
+      type: string
+      title: 客户端标识
+      description: 只看某一个客户端，留空 = 全部
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_client_lookup, sys_config_lookup]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 150
+  maxRetries: 1

@@ -1,0 +1,49 @@
+id: system.user.profile
+name: 用户全景画像
+description: 输入一个账号，输出这个人的完整画像：身份、部门、角色岗位、权限范围与最近登录情况
+aliases:
+  - 这个人是谁
+  - 查一下这个账号
+  - 用户画像
+  - 他有什么权限
+version: 1
+scope: local
+pages:
+  - system/user
+  - system/user/*
+  - ""
+cardType: profile
+promptTemplate: |
+  你是系统管理员助手。先调用 sys_user_profile 取该账号的完整事实（缺失时可用 sys_user_query 按账号名定位）。
+  如果用户还想知道"他能做什么"，再调用 sys_role_matrix 取这些角色的权限串，归纳成业务语言
+  （例如把 system:user:* 说成"用户管理全部操作"），不要直接把权限串一股脑丢给用户。
+  输出要求：
+  1. 结论先行：一句话说清"这个人是谁、在哪个部门、当前能不能登录"；
+  2. 用 kv 列出身份信息（账号、昵称、部门、状态、手机、邮箱）；
+  3. 用 list 列出角色与岗位，每条后附一句这个角色大致能做什么；
+  4. 用 kv 说明登录情况（最后登录时间、来源 IP），并把"距上次登录 N 天"算出来；
+  5. 如果账号已停用或超过 30 天未登录，在末尾用 badges 标出提醒；
+  6. 只使用工具返回的事实，不要推测这个人的职级或绩效。
+paramsSchema:
+  type: object
+  properties:
+    userId:
+      type: string
+      title: 用户编号
+    userName:
+      type: string
+      title: 登录账号
+      description: 与用户编号二选一；两者都为空时应提示用户补充
+  required: []
+context:
+  - key: userId
+    title: 当前用户
+    required: false
+  - key: userName
+    title: 当前账号
+    required: false
+tools: [sys_user_profile, sys_user_query, sys_role_matrix, sys_menu_search]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 150
+  maxRetries: 1

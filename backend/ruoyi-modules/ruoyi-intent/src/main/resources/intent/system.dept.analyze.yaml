@@ -1,0 +1,54 @@
+id: system.dept.analyze
+name: 组织架构诊断
+description: 分析部门层级与人员分布，识别空岗部门、头重脚轻、层级过深等结构问题
+aliases:
+  - 组织架构有没有问题
+  - 部门人员分布
+  - 空岗部门
+  - 组织结构分析
+version: 1
+scope: local
+pages:
+  - system/dept
+  - system/dept/*
+  - system/user
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是组织管理顾问。第一步调用 sys_dept_tree（withDisabled=true）取部门树与人数，
+  第二步调用 sys_user_query 抽查人数异常（0 人或人数特别多）的部门明细。
+  分析维度：
+  ① 空岗部门：在册人数为 0 的部门（可能是废弃组织或漏配人员）；
+  ② 层级深度：超过 4 层的分支（层级越深，审批与数据权限越难维护）；
+  ③ 分布失衡：单部门人数占比过高，或末级部门人数为 1 的碎片化组织；
+  ④ 停用账号堆积：某部门停用账号数接近在册数（疑似整部门已裁撤但未清理）。
+  输出要求：
+  1. 结论先行：一句话给出组织结构健康度与最突出的问题；
+  2. 用 table 列出问题部门（部门、层级、在册人数、停用人数、问题类型）；
+  3. 用 text 块说明层级结构（用缩进或箭头表达父子关系），不要贴原始 JSON；
+  4. 给出 3 条优化建议，每条点明"哪个部门 + 怎么调整 + 依据的数字"；
+  5. memberCount 只统计直属成员，不含下级部门，说明结论时不要把它当成"整个部门的人数"。
+paramsSchema:
+  type: object
+  properties:
+    deptId:
+      type: string
+      title: 部门编号
+      description: 只分析某个部门及其下级，留空 = 全公司
+    maxLevel:
+      type: number
+      title: 层级告警阈值
+      description: 超过该层级视为过深，默认 4
+  required: []
+context:
+  - key: deptId
+    title: 当前部门
+    required: false
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_dept_tree, sys_user_query]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 240
+  maxRetries: 1

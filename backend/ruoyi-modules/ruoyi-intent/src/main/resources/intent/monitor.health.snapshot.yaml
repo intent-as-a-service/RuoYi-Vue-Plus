@@ -1,0 +1,35 @@
+id: monitor.health.snapshot
+name: 系统健康快照
+description: 一键取回在线会话与缓存规模，秒级返回确定结果（纯工具技能，零大模型调用）
+aliases:
+  - 系统健康快照
+  - 现在系统什么状态
+  - 系统巡检
+  - 在线多少人
+version: 1
+scope: local
+pages:
+  - monitor/online
+  - monitor/online/*
+  - monitor/cache
+  - ""
+cardType: snapshot
+
+# 关键一行：指定声明式执行器档案（skill 型 = 确定性步骤，不经过模型）
+executor: system-health-snapshot
+
+paramsSchema:
+  type: object
+  properties: {}
+  required: []
+
+tools: [sys_online_user_query, sys_cache_overview]
+
+promptTemplate: |
+  本意图由 skill 型执行器执行：按执行器档案里的步骤顺序确定性调用宿主工具，
+  不进行大模型推理，因此本提示词不参与生成（仅作为规范完整性的一部分保留）。
+
+policy:
+  roles: ["*"]
+  timeoutSeconds: 60
+  maxRetries: 0

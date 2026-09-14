@@ -1,0 +1,57 @@
+id: monitor.oper.digest
+name: 操作日志摘要与失败归因
+description: 汇总一段时间内的操作行为：谁在改什么、哪些操作在失败、哪些操作慢，给出归因结论
+aliases:
+  - 最近大家都改了什么
+  - 操作日志摘要
+  - 有没有操作失败
+  - 谁改了数据
+version: 1
+scope: local
+pages:
+  - monitor/operlog
+  - monitor/operlog/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是运维分析员。调用 sys_oper_log_query 取操作日志，先看整体，再针对失败项与慢操作下钻。
+  分析维度：
+  ① 变更热点：哪些模块被改得最多（title 聚合），是否集中在少数人身上；
+  ② 失败归因：失败操作集中在哪些模块、错误信息有没有共同点；
+  ③ 慢操作：耗时明显偏高的操作（>1000ms），是否集中在个别接口；
+  ④ 越权线索：操作人与其所属部门是否与操作对象不匹配（只能提示"需人工确认"，不要下结论）。
+  输出要求：
+  1. 结论先行：一句话说出这段时间最重要的变化与最需要关注的问题；
+  2. 用 table 列出失败 TOP（模块、失败次数、典型错误信息）与慢操作 TOP（模块、耗时）；
+  3. 用 list 列出高频操作人及其主要操作类型；
+  4. 给出 3 条建议（监控项、需要优化的接口、需要补充的审计规则）；
+  5. 只使用工具返回的事实。样本条数受限时明确说明"仅基于最近 N 条日志"。
+paramsSchema:
+  type: object
+  properties:
+    operName:
+      type: string
+      title: 操作人
+    title:
+      type: string
+      title: 模块标题
+      description: 如「用户管理」
+    status:
+      type: string
+      title: 状态
+      enum: ["0", "1"]
+      description: 0 = 成功，1 = 失败
+    onlySlow:
+      type: boolean
+      title: 只看慢操作
+      description: true = 只分析耗时超过 1000ms 的操作
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_oper_log_query, sys_user_query]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 200
+  maxRetries: 1

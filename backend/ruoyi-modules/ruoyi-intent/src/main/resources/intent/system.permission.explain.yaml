@@ -1,0 +1,48 @@
+id: system.permission.explain
+name: 权限译解
+description: 把权限串翻译成人话：这个权限能做什么、谁拥有它、对应哪个菜单与按钮
+aliases:
+  - 这个权限是干什么的
+  - 权限解释
+  - 谁能用这个功能
+  - system:user:add 是什么意思
+version: 1
+scope: local
+pages:
+  - system/menu
+  - system/role
+  - system/menu/*
+  - ""
+cardType: explain
+promptTemplate: |
+  你是权限字典。用户会给出一个权限串（如 system:user:add）、一个菜单名（如「用户管理」）
+  或一个路由片段（如 system/user）。
+  1. 先用 sys_menu_search 按关键字检索，按权限串 → 菜单名 → 路由地址三种口径都试一次；
+  2. 再用 sys_role_matrix 查出哪些角色拥有这些权限、各覆盖多少成员；
+  3. 输出要求：
+     1) 结论先行：一句话说明这个权限能做什么（用业务语言，不要复述权限串）；
+     2) 用 table 列出匹配到的菜单项（菜单名、类型、权限串、路由）；
+     3) 用 table 列出拥有该权限的角色（角色名、成员数、数据范围），并给出"实际能被多少人使用"的估算；
+     4) 如果该权限属于高危操作（删除、导出、授权、强制下线、重置密码），用 badges 标出 danger；
+     5) 找不任何匹配时直接说明"系统中不存在该权限"，并给出最接近的 3 条候选，不要编造；
+  4. followups 写还需要确认的事项（例如某个角色是否应该拥有该权限）。
+paramsSchema:
+  type: object
+  properties:
+    keyword:
+      type: string
+      title: 权限串 / 菜单名 / 路由
+      description: 例如 system:user:add、"用户管理"、system/user
+  required: [keyword]
+context:
+  - key: perms
+    title: 当前菜单权限
+    required: false
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_menu_search, sys_role_matrix]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 150
+  maxRetries: 1

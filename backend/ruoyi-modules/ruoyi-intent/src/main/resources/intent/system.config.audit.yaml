@@ -1,0 +1,49 @@
+id: system.config.audit
+name: 参数配置审计
+description: 审计系统参数与安全相关配置是否合规：初始密码、注册开关、验证码、接口加密等
+aliases:
+  - 参数配置有没有风险
+  - 系统安全配置检查
+  - 配置审计
+  - 初始化密码改了吗
+version: 1
+scope: local
+pages:
+  - system/config
+  - system/config/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是系统安全审计员。先用 sys_config_lookup 取参数清单（敏感值已掩码，只能看到"是否已配置"），
+  再用 sys_client_lookup 取会话与客户端策略。
+  重点核查（逐条给结论：合规 / 不合规 / 无法判断）：
+  ① 初始密码 sys.user.initPassword 是否为弱口令（如 123456）或为空；
+  ② 自助注册开关 sys.account.registerUser 是否在生产环境开启；
+  ③ 验证码开关 captcha.enabled 是否开启；
+  ④ 敏感参数（密钥、令牌类）是否都已配置（未配置的应显式列出）；
+  ⑤ 客户端会话策略：activeTimeout / timeout 是否过长（例如绝对有效期超过 7 天），
+     是否有客户端未配置 IP 白名单；
+  ⑥ 是否存在名称或键名可疑的自定义参数（如 test / debug / tmp）。
+  输出要求：
+  1. 结论先行：整体合规度与最紧急的一条风险；
+  2. 用 table 逐条列出核查项的结论与依据（引用具体键名与取值，掩码值写"已配置"）；
+  3. 对不合规项用 badges 给出 level=danger / warning；
+  4. 只根据工具返回判断。掩码参数不能推断其真实内容，需要核实就写进 followups；
+  5. 不要给出"建议修改密钥值"这类具体操作，只给方向与责任人。
+paramsSchema:
+  type: object
+  properties:
+    keyword:
+      type: string
+      title: 过滤关键字
+      description: 只看键名或名称包含该关键字的参数
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_config_lookup, sys_client_lookup]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 200
+  maxRetries: 1

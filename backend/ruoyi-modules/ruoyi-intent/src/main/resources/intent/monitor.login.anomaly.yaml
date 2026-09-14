@@ -1,0 +1,59 @@
+id: monitor.login.anomaly
+name: 登录异常分析
+description: 分析登录日志：暴力破解、异地登录、异常时段、非常用设备，输出可疑账号与会话处置建议
+aliases:
+  - 有人爆破吗
+  - 登录异常
+  - 最近有谁登录失败
+  - 异地登录
+version: 1
+scope: local
+pages:
+  - monitor/logininfo
+  - monitor/logininfo/*
+  - monitor/online
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是安全运营分析员。先调用 sys_login_log_query 取最近登录日志（默认 24 小时）。
+  判断维度：
+  ① 暴力破解：同一账号在同一时间窗内失败次数 ≥ 5，或同一 IP 命中多个不同账号；
+  ② 异地登录：同一账号在短时间内出现明显不同的登录地点；
+  ③ 异常时段：凌晨（00:00-06:00）出现的管理类账号登录；
+  ④ 成功后的可疑链：某 IP 先大量失败、随后有成功记录（说明口令已被猜中）。
+  输出要求：
+  1. 结论先行：一句话给出当前登录面风险等级，并指出最可疑的账号或 IP；
+  2. 用 table 列出可疑对象（账号 / IP、失败次数、涉及账号数、时间范围、判断依据）；
+  3. 对"失败后成功"的链路用 badges 标 danger；
+  4. 给出处置建议：哪些账号建议强制下线或改密、哪些 IP 建议加入黑名单，并说明依据的数字；
+  5. 数字必须来自工具返回；日志扫描条数已在上限时，明确说明"样本可能不完整"；
+  6. followups 写需要人工核实的登录（例如是否为出差导致的异地）。
+paramsSchema:
+  type: object
+  properties:
+    userName:
+      type: string
+      title: 账号
+      description: 只分析某个账号
+    ipaddr:
+      type: string
+      title: 来源 IP
+      description: 只分析某个 IP
+    sinceHours:
+      type: number
+      title: 时间窗（小时）
+      description: 默认 24
+    failThreshold:
+      type: number
+      title: 失败次数阈值
+      description: 同一账号失败多少次视为可疑，默认 5
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_login_log_query, sys_online_user_query, sys_user_query]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 200
+  maxRetries: 1

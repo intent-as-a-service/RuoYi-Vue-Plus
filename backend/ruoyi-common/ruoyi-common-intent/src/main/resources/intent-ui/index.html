@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>意图即服务 · 调试台</title>
+  <link rel="stylesheet" href="./css/intent-ui.css" />
+  <style>
+    :root { --line: #e5e7eb; --muted: #6b7280; --brand: #2563eb; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px; background: #f6f7f9; color: #111827;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    header { margin-bottom: 16px; }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    .sub { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      padding: 12px; margin-bottom: 16px;
+    }
+    .bar label { font-size: 13px; color: var(--muted); }
+    .bar input {
+      height: 32px; padding: 0 10px; border: 1px solid var(--line);
+      border-radius: 6px; font-size: 13px; min-width: 200px;
+    }
+    .bar input.grow { flex: 1; min-width: 300px; }
+    button {
+      height: 32px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--brand);
+      background: var(--brand); color: #fff; font-size: 13px; cursor: pointer;
+    }
+    button.ghost { background: #fff; color: var(--brand); }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 16px; }
+    @media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    .card {
+      background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      padding: 14px; min-height: 320px;
+    }
+    .card h2 { margin: 0 0 10px; font-size: 15px; }
+    pre {
+      margin: 0; padding: 10px; background: #0f172a; color: #d7e3f4;
+      border-radius: 8px; font-size: 12px; line-height: 1.6;
+      max-height: 520px; overflow: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    .tip { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.7; }
+    .ok { color: #4ade80; } .bad { color: #f87171; }
+    code { background: #eef2f7; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>意图即服务 · 调试台</h1>
+  <div class="sub">
+    这是内嵌意图 SDK 的<b>宿主调试台</b>：与业务页面同源同鉴权，直接复用登录态，不需要单独账号。<br />
+    面板能力（意图菜单 / 槽位表单 / 待办分组 / 结果卡片 / 执行轨迹 / 历史 / 反馈）全部来自
+    <code>intent-ui-sdk.js</code>，业务系统只做"注入 + 挂载"。
+  </div>
+</header>
+
+<div class="bar">
+  <label>API 前缀</label>
+  <input id="apiPrefix" value="/dev-api/intent" />
+  <label>客户端 ID</label>
+  <input id="clientId" value="e5cd7e4891bf95d1d19206ce24a7b32e" />
+  <label>令牌</label>
+  <input id="token" class="grow" placeholder="从 localStorage[Admin-Token] 自动读取，也可手工粘贴" />
+  <label>页面标识</label>
+  <input id="page" value="" placeholder="留空 = 意图中心（全量）" />
+  <button id="reload">重新装载</button>
+  <button id="floating" class="ghost">挂悬浮球</button>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>意图面板（debug 模式：点意图先填槽位再执行）</h2>
+    <div id="panel"></div>
+    <div class="tip" id="hint"></div>
+  </div>
+  <div class="card">
+    <h2>目录原始响应</h2>
+    <pre id="raw">尚未请求。</pre>
+    <div class="tip">
+      调试顺序建议：<br />
+      1）先看 <code>entries</code>（当前页装载了哪些意图）与 <code>badge</code>（事实徽标）；<br />
+      2）再看 <code>suggestions</code>（待办与推荐，参数已齐备、点击即执行）；<br />
+      3）执行后到「执行历史」里看步骤级轨迹（工具的入参与返回）。
+    </div>
+  </div>
+</div>
+
+<script src="./js/intent-ui-sdk.js"></script>
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+
+  $('token').value = localStorage.getItem('Admin-Token') || '';
+
+  var panel = null;
+  var floating = null;
+
+  function configure() {
+    return IntentUI.configure({
+      apiPrefix: $('apiPrefix').value.trim(),
+      authHeaders: function () {
+        return {
+          Authorization: 'Bearer ' + $('token').value.trim(),
+          clientid: $('clientId').value.trim()
+        };
+      },
+      locale: 'zh-CN',
+      zIndex: 900,
+      theme: 'auto'
+    });
+  }
+
+  function mountPanel() {
+    configure();
+    if (panel) { panel.destroy(); panel = null; }
+    var page = $('page').value.trim();
+    panel = IntentUI.mount({
+      container: $('panel'),
+      page: page || undefined,
+      mode: 'debug'
+    });
+    $('hint').innerHTML = page
+      ? '按页面装载：<b>' + page + '</b>（只展示 pages 命中该页面的意图）'
+      : '意图中心：展示当前角色可见的<b>全部</b>意图';
+    loadRaw(page);
+  }
+
+  function loadRaw(page) {
+    var base = $('apiPrefix').value.trim();
+    var url = base + '/catalog' + (page ? '?page=' + encodeURIComponent(page) : '');
+    fetch(url, {
+      headers: {
+        Authorization: 'Bearer ' + $('token').value.trim(),
+        clientid: $('clientId').value.trim()
+      }
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (body) {
+        var data = body && body.code !== undefined ? body.data : body;
+        var summary = {
+          systemName: data && data.systemName,
+          gatewayStatus: data && data.gatewayStatus,
+          entryCount: data && data.entries ? data.entries.length : 0,
+          suggestionCount: data && data.suggestions ? data.suggestions.length : 0
+        };
+        $('raw').innerHTML = '<span class="ok">// 摘要</span>\n'
+          + JSON.stringify(summary, null, 2)
+          + '\n\n<span class="ok">// 完整响应</span>\n'
+          + JSON.stringify(data, null, 2);
+      })
+      .catch(function (err) {
+        $('raw').innerHTML = '<span class="bad">请求失败：' + (err && err.message ? err.message : err) + '</span>';
+      });
+  }
+
+  $('reload').addEventListener('click', mountPanel);
+
+  $('floating').addEventListener('click', function () {
+    configure();
+    if (!floating) {
+      floating = IntentUI.mountFloating({
+        getPage: function () { return $('page').value.trim(); },
+        getContext: function () { return {}; }
+      });
+      $('hint').innerHTML = '悬浮球已挂载到右下角（可拖动，位置记在 localStorage）。';
+    } else {
+      floating.destroy();
+      floating = null;
+      $('hint').innerHTML = '悬浮球已移除。';
+    }
+  });
+
+  mountPanel();
+</script>
+</body>
+</html>

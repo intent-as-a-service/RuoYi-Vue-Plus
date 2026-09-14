@@ -1,0 +1,35 @@
+# =============================================================
+# 文件名前缀 = 待办分组的展示优先级（越小越靠前；面板默认只并排展示 5 组）
+#
+# 一条规则 = 查询(dataset) + 条件(filter) + 输出模板(badge/items) + 参数映射(params)
+# 事实由 SystemIntentFactProvider 供给（口径与「系统管理 → 用户管理」一致）。
+#
+# 改文案、改阈值、改挂载页面只动本文件即可；写错（意图不存在 / 参数不在入参 Schema 内）
+# 会在启动时直接失败，不会静默失效。
+#
+# 注意：badge 的 {{count}} 用的是数据集自身的计数口径（见 FactProvider#count），
+#      不是 filter 之后的条数 —— 两者要表达同一件事时，请在 FactProvider 里对齐阈值。
+# =============================================================
+- id: system.user.inactive
+  intent: system.user.risk-scan
+  dataset: system.inactive-users
+  scope:
+    # 只在账号与权限相关页面提示：账号治理是「用户维度」的待办，
+    # 挂在监控页只会挤占当页更相关的建议；空串 = 意图中心
+    page: ["system/user", "system/user/*", "system/role", ""]
+  filter:
+    all:
+      # 30 天没登录才值得提醒；阈值改这里，不用改 Java
+      - { op: gte, left: row.idleDays, right: 30 }
+      - { op: eq, left: row.status, right: "正常" }
+  badge:
+    text: "{{count}} 个账号超过 30 天未登录"
+    level: warning
+  items:
+    limit: 5
+    title: "账号「{{row.nickName}}」已 {{row.idleDays | days}} 天未登录"
+    subtitle: "{{row.userName}} · {{row.deptName}} · 上次登录 {{row.lastLogin}}"
+    reason: "长期未登录的账号要先确认人员是否在岗，再决定回收权限还是停用；点一下直接做账号风险体检"
+    params:
+      keyword: { from: row.userName, type: string }
+      focus: { value: "久未登录" }

@@ -1,0 +1,42 @@
+# =============================================================
+# 执行器档案种子：纯工具技能（skill 型，零大模型调用）
+#
+# 这是"确定性意图"的模板：把标准作业程序固化成步骤，不交给模型现场规划。
+#   · 快：纯工具步骤，实测 13ms 返回；
+#   · 省：token 用量为 0，不产生任何模型费用；
+#   · 稳：结果确定、可审计，适合"取数看板""巡检快照""标准对账"这类场景。
+#
+# 对比 agent 型：agent 把"怎么做"交给模型（工具集 + 推理循环），
+# 适合需要临场判断的分析类意图；两者用 IntentSpec.executor 切换，规范其余部分完全不变。
+# =============================================================
+id: system-health-snapshot
+type: skill
+name: 系统健康快照
+description: 顺序执行两个只读工具步骤，秒级返回在线会话与缓存规模（不调用大模型）
+
+# 纯工具步骤：每一步声明用哪个工具与它的入参（值会被渲染成字符串）
+steps:
+  - name: online
+    tool: sys_online_user_query
+    args:
+      limit: "20"
+  - name: cache
+    tool: sys_cache_overview
+    args:
+      includeUnknown: "false"
+
+# 出参模板：逐项渲染成前端可渲染的标准信封（title / summary / blocks）
+#
+# ⚠️ 两个容易踩的点：
+#   1. 模板以 [ 或 { 开头 → 渲染结果会被解析成结构化值（这里是 blocks 数组）；
+#      否则会当成纯文本，出参 Schema 校验会报 "$.blocks: 应为数组"。
+#   2. 变量占位符必须自带引号：写 "text":"${steps.online.text}" 而不是 "text":${...}。
+#      因为渲染器会对变量值做 JSON 转义并去掉首尾引号，模板要负责把引号补回来。
+output:
+  title: 系统健康快照
+  summary: 已取回在线会话与缓存规模（纯工具步骤，未调用大模型）
+  blocks: '[{"kind":"kv","title":"取数说明","items":[{"label":"执行方式","value":"纯工具步骤（零 token）"},{"label":"数据来源","value":"Sa-Token 会话 + Redis 缓存"}]},{"kind":"text","title":"在线会话明细","text":"${steps.online.text}"},{"kind":"text","title":"缓存规模明细","text":"${steps.cache.text}"}]'
+
+# 治理：纯本地技能，不重试（纯工具步骤可重复执行，重试没有意义）
+limits:
+  outputMaxRetries: 0

@@ -1,0 +1,52 @@
+id: monitor.online.watch
+name: 在线会话观察
+description: 观察当前在线会话：规模、客户端分布、同账号多端、异地并发，识别需要处置的异常会话
+aliases:
+  - 现在谁在线
+  - 在线用户分析
+  - 有没有异常会话
+  - 同一账号多处登录
+version: 1
+scope: local
+pages:
+  - monitor/online
+  - monitor/online/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是会话运维观察员。调用 sys_online_user_query 取当前全部在线会话。
+  观察维度：
+  ① 规模：活跃会话总数与去重后的账号数，平均每人几端；
+  ② 多端并发：同一账号会话数 ≥ 3 的账号（可能是共享账号，也可能是会话未正常退出）；
+  ③ 地域分散：同一账号的登录地点差异明显（需人工确认是否为出差）；
+  ④ 管理员在线：管理类账号当前有几处在线的。
+  输出要求：
+  1. 结论先行：一句话给出在线态势与最需要关注的一条；
+  2. 用 kv 给出总量指标（活跃会话、去重账号、客户端分布）；
+  3. 用 table 列出多端并发账号（账号、会话数、来源 IP、登录地点、客户端）与管理员在线明细；
+  4. 对共享账号嫌疑用 badges 标 warning，不要直接断言"账号被盗"；
+  5. 给出处置建议（建议强制下线的会话类型、需要开启的会话上限策略）；
+  6. 本工具返回的 token 是脱敏后缀，不能用于下线操作；如需下线请到「在线用户」页面操作。
+paramsSchema:
+  type: object
+  properties:
+    userName:
+      type: string
+      title: 账号
+    ipaddr:
+      type: string
+      title: 来源 IP
+    limit:
+      type: number
+      title: 明细条数上限
+      description: 默认 50
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_online_user_query, sys_user_profile]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 150
+  maxRetries: 1

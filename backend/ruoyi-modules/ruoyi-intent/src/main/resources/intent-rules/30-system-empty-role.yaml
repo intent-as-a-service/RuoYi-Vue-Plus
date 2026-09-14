@@ -1,0 +1,20 @@
+# =============================================================
+# 系统事实规则：没有任何成员的角色 → 提示 + 一键权限体系体检
+# 事实由 SystemIntentFactProvider#emptyRoles 供给。
+# =============================================================
+- id: system.role.empty
+  intent: system.permission.audit
+  dataset: system.empty-roles
+  scope:
+    page: ["system/role", "system/role/*", "system/user", ""]
+  badge:
+    text: "{{count}} 个角色没有任何成员"
+    level: info
+  items:
+    limit: 5
+    title: "角色「{{row.roleName}}」没有任何成员"
+    subtitle: "编码 {{row.roleKey}} · 状态 {{row.status}}"
+    reason: "没人使用的角色要么是待分配的新角色，要么是历史遗留；点一下做权限体系体检，确认是否该清理"
+    params:
+      roleKey: { from: row.roleKey, type: string }
+      focus: { value: "僵尸角色" }

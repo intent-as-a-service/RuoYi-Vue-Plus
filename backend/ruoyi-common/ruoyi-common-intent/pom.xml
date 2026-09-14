@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.dromara</groupId>
+        <artifactId>ruoyi-common</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ruoyi-common-intent</artifactId>
+
+    <description>
+        ruoyi-common-intent 意图即服务（Intent as a Service）开发框架
+        —— 内嵌 AI 意图 SDK 的宿主装配、目录/执行/留痕/运营 API 与前端组件资源。
+        业务模块接入只需两步：声明宿主工具 Bean + resources/intent/*.yaml。
+    </description>
+
+    <dependencies>
+        <!-- 核心模块 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-core</artifactId>
+        </dependency>
+
+        <!-- web服务（含 Jetty 与 spring-boot-starter-web） -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-web</artifactId>
+        </dependency>
+
+        <!-- 序列化模块 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-json</artifactId>
+        </dependency>
+
+        <!-- 数据库服务（DO / Mapper / PageQuery / BaseMapperPlus） -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-mybatis</artifactId>
+        </dependency>
+
+        <!-- satoken（身份 / 权限 / 上下文桥的宿主实现） -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-satoken</artifactId>
+        </dependency>
+
+        <!-- 操作日志 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-log</artifactId>
+        </dependency>
+
+        <!-- 接口文档 -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-common-doc</artifactId>
+        </dependency>
+
+        <!-- api模块（LoginUser / UserService 等 SPI） -->
+        <dependency>
+            <groupId>org.dromara</groupId>
+            <artifactId>ruoyi-api</artifactId>
+        </dependency>
+
+        <!-- ==================== 意图 SDK（next-agent） ==================== -->
+        <!-- 协议 DTO：IntentSpec / IntentRequest / IntentResult / CatalogResponse ... -->
+        <dependency>
+            <groupId>io.github.intent-as-a-service</groupId>
+            <artifactId>intent-protocol</artifactId>
+        </dependency>
+
+        <!-- 执行引擎内核：规范加载校验 / 编排 / 目录装配 / 工具契约（无 Spring、无 pi 依赖） -->
+        <dependency>
+            <groupId>io.github.intent-as-a-service</groupId>
+            <artifactId>intent-sdk-core</artifactId>
+        </dependency>
+
+        <!-- 宿主 SPI + 声明式事实规则引擎 -->
+        <dependency>
+            <groupId>io.github.intent-as-a-service</groupId>
+            <artifactId>intent-sdk-host</artifactId>
+        </dependency>
+
+        <!-- 执行器实现（builtin-agent 推理循环 / skill / flow）+ LLM 接入 —— 唯一依赖 pi-ai/pi-agent 的模块 -->
+        <dependency>
+            <groupId>io.github.intent-as-a-service</groupId>
+            <artifactId>intent-sdk-pi</artifactId>
+        </dependency>
+
+        <!-- 可组装网关客户端：不装配 = 本地闭环，装配 = 跨系统意图路由 -->
+        <dependency>
+            <groupId>io.github.intent-as-a-service</groupId>
+            <artifactId>intent-sdk-gateway</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>

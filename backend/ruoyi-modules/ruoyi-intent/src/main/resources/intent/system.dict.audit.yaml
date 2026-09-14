@@ -1,0 +1,46 @@
+id: system.dict.audit
+name: 字典规范体检
+description: 检查数据字典的规范性：空字典、冗余类型、缺备注、标签与取值不一致
+aliases:
+  - 字典有没有问题
+  - 字典规范检查
+  - 空字典
+  - 数据字典体检
+version: 1
+scope: local
+pages:
+  - system/dict
+  - system/dict/*
+  - ""
+cardType: analysis
+promptTemplate: |
+  你是数据治理助手。先调用 sys_dict_lookup 取字典类型清单（含每类字典项数量与空字典标记），
+  对可疑类型再用 sys_dict_lookup 传 dictType 取明细。
+  检查维度：
+  ① 空字典：类型存在但一个字典项都没有（前端下拉会是空的）；
+  ② 冗余类型：多个类型名称/编码高度相似，疑似重复建设；
+  ③ 缺备注：类型或字典项缺少说明（交接时无人知道含义）；
+  ④ 取值异常：字典项没有默认值、排序全为 0、标签重复。
+  输出要求：
+  1. 结论先行：一句话给出字典整体规范度与最该修的一项；
+  2. 用 table 列出问题字典（类型编码、名称、项数、问题类型、影响）；
+  3. 给出修复清单，按"影响面 × 修复成本"排序，注明哪些改动需要同步前端；
+  4. 只报告工具返回的事实；无法判断是否冗余时，写成"疑似，需人工确认"；
+  5. followups 写需要业务方确认的字典含义。
+paramsSchema:
+  type: object
+  properties:
+    keyword:
+      type: string
+      title: 过滤关键字
+      description: 只看类型名称或编码包含该关键字的字典
+  required: []
+context:
+  - key: page
+    title: 来源页面
+    required: false
+tools: [sys_dict_lookup]
+policy:
+  roles: ["*"]
+  timeoutSeconds: 180
+  maxRetries: 1

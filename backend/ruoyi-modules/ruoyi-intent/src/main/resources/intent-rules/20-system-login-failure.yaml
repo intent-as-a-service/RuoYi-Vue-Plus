@@ -1,0 +1,26 @@
+# =============================================================
+# 系统事实规则：近 24 小时登录失败 → 提示 + 一键登录异常分析
+# 事实由 SystemIntentFactProvider#loginFailures 供给（最新 200 条日志的有界样本）。
+# =============================================================
+- id: system.login.failure
+  intent: monitor.login.anomaly
+  dataset: system.login-failures
+  scope:
+    # 登录日志页、在线用户页与意图中心提示；其余页面不打扰
+    page: ["monitor/logininfo", "monitor/logininfo/*", "monitor/online", ""]
+  filter:
+    # 单账号失败 3 次以上才值得点开看；阈值改这里
+    op: gte
+    left: row.failCount
+    right: 3
+  badge:
+    text: "近 24 小时 {{count}} 次登录失败"
+    level: danger
+  items:
+    limit: 5
+    title: "账号「{{row.userName}}」近 24 小时失败 {{row.failCount}} 次"
+    subtitle: "最近来源 {{row.lastIp}} · 时间 {{row.lastTime}}"
+    reason: "连续失败可能是口令遗忘，也可能是撞库尝试；点一下做登录异常分析，确认要不要强制下线或加黑名单"
+    params:
+      userName: { from: row.userName, type: string }
+      failThreshold: { value: 3 }
