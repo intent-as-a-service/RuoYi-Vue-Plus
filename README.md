@@ -73,11 +73,14 @@ This repository is one of three:
 
 **Prerequisites**: JDK 21, Maven, MySQL 8, Redis, Node 20.19+ with pnpm 10.
 
-**1. Install the intent SDK** (not published to Maven Central yet):
+**1. Install the intent SDK** (not published to Maven Central yet). Note the `-Pwith-pi` flag: the
+executor module is opt-in and needs the `dev.pi` artifacts, whose publication status is described in
+the [intent-sdk](https://github.com/intent-as-a-service/intent-sdk) README. Running this host
+end to end needs the executors.
 
 ```bash
 git clone git@github.com:intent-as-a-service/intent-sdk.git
-cd intent-sdk && mvn install -DskipTests
+cd intent-sdk && mvn -Pwith-pi install -DskipTests
 ```
 
 **2. Create the database and import the schema** (the database name `ry-vue` matches the default in
@@ -194,9 +197,11 @@ pi-agent 的推理循环在**独立线程**执行工具调用，而宿主的登�
 ### 快速开始
 
 ```bash
-# 1) 先装意图 SDK（尚未发布中央仓）
+# 1) 先装意图 SDK（尚未发布中央仓）。
+#    注意 -Pwith-pi：执行器模块是可选模块，需要 dev.pi 制品（发布状态见 intent-sdk 的 README）；
+#    端到端跑起本宿主必须要有执行器。
 git clone git@github.com:intent-as-a-service/intent-sdk.git
-cd intent-sdk && mvn install -DskipTests
+cd intent-sdk && mvn -Pwith-pi install -DskipTests
 
 # 2) 建库导表（库名 ry-vue 与 application-dev.yml 默认值一致）
 mysql -uroot -p -e "CREATE DATABASE \`ry-vue\` DEFAULT CHARACTER SET utf8mb4"
