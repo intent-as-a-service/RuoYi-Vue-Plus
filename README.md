@@ -1,24 +1,44 @@
 **English** · [中文](#chinese)
 
 <a name="english"></a>
-# RuoYi-Vue-Plus · Intent as a Service reference host
+# RuoYi-Vue-Plus × Intent as a Service
 
-[RuoYi-Vue-Plus](https://github.com/dromara/RuoYi-Vue-Plus) (backend) and
-[plus-ui](https://github.com/JavaLionLi/plus-ui) (frontend) in a single repository, with
-**Intent as a Service** embedded as a working reference implementation.
+### Clone it, start it, click one button — and get an AI capability whose permissions, transactions and data scope are *already yours*
 
-> **Intent as a Service removes the chat box.** A business page shows a row of *intent buttons*; one
-> click runs the intent and a structured result card renders in place. The AI runs **in-process
-> inside the application**, so permissions, transactions and data scope stay exactly as the host
-> defines them — no separate account system, no cross-domain calls, no data leaving your boundary.
+[![License](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue.svg)](#notes-and-credits)
+![JDK](https://img.shields.io/badge/JDK-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-brightgreen.svg)
+![Intents](https://img.shields.io/badge/intents%20to%20click-14-blueviolet.svg)
+![Host tools](https://img.shields.io/badge/host%20tools-13-informational.svg)
 
-This repository is one of three:
+**A complete, runnable reference host.** [RuoYi-Vue-Plus](https://github.com/dromara/RuoYi-Vue-Plus)
+(backend) and [plus-ui](https://github.com/JavaLionLi/plus-ui) (frontend) in a single repository, with
+**Intent as a Service** embedded end to end: **14 intents, 13 host tools, 3 declarative fact rules and
+one zero-LLM executor profile**, plus a debug console you can click through moments after start-up.
+
+> **No chat box, no second account system, no cross-domain calls.** The page declares what can be
+> asked; the model runs **in-process inside the Spring Boot application**; tools call host services
+> directly, so Sa-Token identity, permission checks and data-scope filtering follow the call stack.
+
+### What you can click, a minute after start-up
+
+| Try this | What happens |
+|---|---|
+| `http://localhost:8080/intent-ui/index.html` | The intent debug console — catalog, slot form, execution and trace, without writing a line of code |
+| The floating AI button on any admin page | The intent drawer, scoped to the page you are on |
+| System → User management | Todos with badges — e.g. accounts inactive for 30+ days, from your own data |
+
+One release, both ends of the performance range: **19–23 s / ~10k tokens** for an agent-type intent,
+**13–51 ms / 0 tokens** when the same work is frozen into a skill-type one.
+
+### The four repositories
 
 | Repository | What it is |
 |---|---|
 | [intent-sdk](https://github.com/intent-as-a-service/intent-sdk) | The framework: protocol, execution engine, host SPI, Spring Boot starter |
 | [intent-ui-sdk](https://github.com/intent-as-a-service/intent-ui-sdk) | The framework-agnostic front end: floating button, drawer, result cards, trace |
 | [ruoyi-office](https://github.com/intent-as-a-service/ruoyi-office) | The other reference host (yudao backend + Vben frontend, full CRM intent chain) |
+| **this repository** | Reference host on RuoYi-Vue-Plus + plus-ui — 14 system / monitor intents |
 
 ---
 
@@ -120,9 +140,18 @@ cd frontend && pnpm install && pnpm dev
 | Any admin page, bottom right | The draggable AI button |
 | System → User management | Todos with badges, e.g. accounts inactive for 30+ days |
 
-![Intent debug console](backend/docs/assets/intent-as-a-service/01-意图调试台-流程执行结果.png)
+```
+   business page            in-process (the same Spring Boot app)            host services
+   ┌─────────────┐          ┌───────────────────────────────┐              ┌───────────────────┐
+   │ intent btn  │ ───────▶ │ intent-sdk-core               │ ──────────▶  │ SysUserService    │
+   │ result card │ ◀─────── │  + pi reasoning / skill steps │ ◀──────────  │ permissions · tx  │
+   └─────────────┘          └───────────────────────────────┘              └───────────────────┘
+     intent request             result envelope (JSON)                     in-process call
+```
 
-![Execution trace](backend/docs/assets/intent-as-a-service/02-执行过程-步骤留痕.png)
+The debug console shows the same flow end to end — catalog, slot form, result card and the
+step-by-step execution trace. Screenshots of it are in the
+[ruoyi-office](https://github.com/intent-as-a-service/ruoyi-office) README.
 
 ## Measured numbers
 
@@ -158,15 +187,44 @@ Detailed delivery documentation lives in `backend/docs/intent/` (currently in Ch
 <a name="chinese"></a>
 # RuoYi-Vue-Plus × 意图即服务
 
+### 克隆、启动、点一下按钮 —— 拿到的 AI 能力，权限、事务、数据范围本来就是你自己的
+
 [English](#english) · **中文**
 
-本仓把 [RuoYi-Vue-Plus](https://github.com/dromara/RuoYi-Vue-Plus)（后端）与
-[plus-ui](https://github.com/JavaLionLi/plus-ui)（前端）放在一个仓库里，并在其上植入了
-**意图即服务**的完整参考实现。
+![License](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT%20%2B%20Apache--2.0-blue.svg)
+![JDK](https://img.shields.io/badge/JDK-21-orange.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1-brightgreen.svg)
+![意图](https://img.shields.io/badge/%E5%8F%AF%E7%82%B9%E7%9A%84%E6%84%8F%E5%9B%BE-14-blueviolet.svg)
+![宿主工具](https://img.shields.io/badge/%E5%AE%BF%E4%B8%BB%E5%B7%A5%E5%85%B7-13-informational.svg)
 
-> **意图即服务去掉聊天框**：业务页面放一排意图按钮，点击即执行，结果卡片就地渲染。
-> AI 能力以**原生 SDK 进程内嵌入**应用，权限、事务、数据范围完全沿用宿主 ——
-> 不建独立账号体系、不跨域、数据不出域。
+**一套开箱即跑的完整参考实现。** 本仓把 [RuoYi-Vue-Plus](https://github.com/dromara/RuoYi-Vue-Plus)
+（后端）与 [plus-ui](https://github.com/JavaLionLi/plus-ui)（前端）放在一个仓库里，并把**意图即服务**
+端到端植入：**14 个意图、13 个宿主工具、3 份声明式事实规则、1 个零 LLM 执行器档案**，
+外加一个启动后几十秒就能点起来的意图调试台。
+
+> **没有聊天框、没有第二套账号体系、不跨域。** 页面声明"能问什么"，模型**进程内**运行在
+> Spring Boot 应用里，工具直调宿主 Service —— Sa-Token 登录态、权限校验、数据权限过滤
+> 全程随调用栈走，不需要为 AI 重做一遍。
+
+### 启动一分钟后能点什么
+
+| 打开这个 | 会看到什么 |
+|---|---|
+| `http://localhost:8080/intent-ui/index.html` | 意图调试台：意图目录、槽位表单、执行、轨迹，一行代码都不用写 |
+| 任意后台页面右下角的悬浮球 | 意图抽屉，按当前页面装载可用的意图 |
+| 系统管理 → 用户管理 | 带徽标的待办（例如 30 天以上未登录的账号），数据来自你自己的库 |
+
+同一份代码里两个极端都跑得出来：agent 型意图 **19~23s / 约 10k token**，
+同样的活固化成 skill 型意图后 **13~51ms / 0 token**。
+
+### 四个仓库
+
+| 仓库 | 说明 |
+|---|---|
+| [intent-sdk](https://github.com/intent-as-a-service/intent-sdk) | 框架本体：协议、执行引擎、宿主 SPI、Spring Boot Starter |
+| [intent-ui-sdk](https://github.com/intent-as-a-service/intent-ui-sdk) | 框架无关的前端：悬浮球、抽屉、结果卡片、执行轨迹 |
+| [ruoyi-office](https://github.com/intent-as-a-service/ruoyi-office) | 另一个参考宿主（yudao 后端 + Vben 前端，CRM 全链路） |
+| **本仓** | RuoYi-Vue-Plus + plus-ui 参考宿主 —— 14 个系统 / 监控意图 |
 
 ### 目录结构
 
